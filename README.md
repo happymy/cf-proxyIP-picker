@@ -8,11 +8,12 @@ Cloudflare Worker 部署的 PROXYIP 可视化管理面板。
 - Leaflet 地图标注 IP 地理位置，标记颜色随延迟变化
 - IP 多选、搜索、标签管理；结果可切换换行/逗号分隔格式
 - 暗色模式，单文件部署
+- 桌面端和移动端统一上下布局，友好适配各尺寸屏幕
 
 ## 使用
 
 ```bash
-npx wrangler deploy _worker.js --name proxyip-picker --compatibility-date 2026-07-04
+npx wrangler deploy
 ```
 
 ## 数据来源
