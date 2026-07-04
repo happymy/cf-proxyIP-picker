@@ -52,9 +52,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
 .header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .header-controls { display: flex; gap: 8px; align-items: center; }
-.main { display: grid; grid-template-columns: 1fr 380px; gap: 16px; flex: 1; }
-.map-container { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--card); }
-.map-container #map { height: 100%; min-height: 400px; }
+.main { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.map-container { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--card); height: 350px; }
+.map-container #map { height: 100%; }
 .panel { display: flex; flex-direction: column; gap: 12px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
 .card-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
@@ -98,13 +98,17 @@ html.dark-mode .tag { background: #450a0a; border-color: #991b1b; color: #fca5a5
 .search-box input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; outline: none; }
 .search-box .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 14px; }
 @media (max-width: 860px) {
-  .main { grid-template-columns: 1fr; }
-  .map-container #map { min-height: 250px; }
+  .map-container { height: 250px; }
   .header h1 { font-size: 16px; }
 }
 @media (max-width: 480px) {
   .container { padding: 8px; }
   .result-area { flex-direction: column; }
+  .map-container { height: 200px; }
+  .card { padding: 10px; }
+  .header { flex-direction: column; align-items: flex-start; }
+  .header-controls { width: 100%; flex-wrap: wrap; }
+  .ip-item { flex-wrap: wrap; }
 }
 </style>
 </head>
