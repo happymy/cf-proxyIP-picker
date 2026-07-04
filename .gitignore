@@ -1,0 +1,4 @@
+plan/
+.wrangler/
+.playwright-mcp/
+dist/
