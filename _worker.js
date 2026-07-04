@@ -114,6 +114,7 @@ html.dark-mode .tag { background: #450a0a; border-color: #991b1b; color: #fca5a5
     <h1>&#x1F5FA;&#xFE0F; 获取更多 PROXYIP</h1>
     <div class="header-controls">
       <span id="totalCount" style="font-size:13px;color:var(--text-secondary)"></span>
+      <span style="font-size:11px;color:var(--text-secondary);opacity:.7">数据来源：<a href="https://zip.cm.edu.kg/all.json" target="_blank" style="color:inherit">zip.cm.edu.kg</a></span>
       <button class="dark-toggle" id="darkToggleBtn" title="切换暗色模式">&#x1F313;</button>
     </div>
   </div>
@@ -148,11 +149,6 @@ html.dark-mode .tag { background: #450a0a; border-color: #991b1b; color: #fca5a5
       </div>
 
       <div class="card">
-        <div class="card-title">&#x270F;&#xFE0F; 手动输入 IP</div>
-        <textarea id="manualInput" placeholder="每行一个 IP，或用逗号分隔&#10;例如:&#10;1.1.1.1:443&#10;8.8.8.8&#10;4.4.4.4:2096"></textarea>
-      </div>
-
-      <div class="card">
         <div class="card-title">&#x1F4CB; 已选 IP (<span id="selectedCount">0</span>)</div>
         <div id="selectedTags" class="selected-tags">
           <div class="empty-state">还没有选择任何 IP</div>
@@ -165,8 +161,11 @@ html.dark-mode .tag { background: #450a0a; border-color: #991b1b; color: #fca5a5
           <textarea id="resultText" readonly placeholder="选择或输入 IP 后，点击复制..."></textarea>
           <button class="btn btn-primary" id="copyBtn" disabled>复制</button>
         </div>
-        <div style="margin-top:8px;display:flex;gap:8px">
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
           <button class="btn btn-secondary btn-sm" id="clearAllBtn">清空</button>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px">
+            <input type="checkbox" id="commaSep"> 逗号分隔
+          </label>
         </div>
       </div>
     </div>
@@ -418,7 +417,7 @@ function updateUI() {
       '<span class="remove" data-ip="' + htmlEscape(ip) + '">\u00D7</span>' +
     '</span>';
   }).join('');
-  result.value = arr.join('\\n');
+  result.value = arr.join(document.getElementById('commaSep').checked ? ', ' : '\\n');
   copyBtn.disabled = false;
 }
 
@@ -437,7 +436,6 @@ function removeIP(ip) {
 
 function clearAll() {
   selectedIPs.clear();
-  document.getElementById('manualInput').value = '';
   var list = document.getElementById('ipList');
   var cbs = list.querySelectorAll('input[type="checkbox"]');
   cbs.forEach(function(cb) { cb.checked = false; });
@@ -502,20 +500,9 @@ function initEvents() {
       if (ip) removeIP(ip);
     }
   });
-  document.getElementById('manualInput').addEventListener('input', function(e) {
-    var text = e.target.value;
-    if (!text) return;
-    var hasDelimiter = text.indexOf('\\n') !== -1 || text.indexOf(',') !== -1 || text.indexOf('\uFF0C') !== -1;
-    if (!hasDelimiter) return;
-    var ips = text.split(/[\\n,，]+/).map(function(s) { return s.trim(); }).filter(Boolean);
-    if (ips.length === 0) return;
-    ips.forEach(function(ip) { selectedIPs.add(ip); });
-    e.target.value = '';
-    updateUI();
-    showToast('\u5DF2\u6DFB\u52A0 ' + ips.length + ' 个 IP');
-  });
   document.getElementById('copyBtn').addEventListener('click', copyResult);
   document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+  document.getElementById('commaSep').addEventListener('change', updateUI);
   document.getElementById('darkToggleBtn').addEventListener('click', function() {
     document.documentElement.classList.toggle('dark-mode');
   });
