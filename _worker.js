@@ -8,7 +8,10 @@ export default {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store',
-        'Content-Security-Policy': "default-src 'self' 'unsafe-inline' https://unpkg.com https://*.is.autonavi.com https://*.090227.xyz https://zip.cm.edu.kg; img-src 'self' data: https://*.is.autonavi.com https://unpkg.com; connect-src 'self' https://zip.cm.edu.kg https://*.090227.xyz;"
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.is.autonavi.com https://unpkg.com; connect-src 'self' https://zip.cm.edu.kg https://*.090227.xyz; font-src 'self' data:;",
+        'X-Frame-Options': 'DENY',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
       }
     });
   }
@@ -20,7 +23,7 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>获取更多 PROXYIP</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
 :root {
   --primary: #10b981;
@@ -204,7 +207,9 @@ loadList();
 async function loadList() {
   try {
     const res = await fetch('https://zip.cm.edu.kg/all.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    if (!Array.isArray(json.data)) throw new Error('Invalid data format');
     allData = json.data.filter(function(item) {
       return Array.isArray(item.port) ? item.port.includes(443) : item.port === 443;
     }).map(function(item) {
@@ -228,7 +233,7 @@ async function loadList() {
     document.getElementById('totalCount').textContent = '共 ' + allData.length + ' 个 IP';
     initMap();
   } catch(e) {
-    console.error('\u52A0\u8F7D\u5931\u8D25:', e);
+    showToast('\u52A0\u8F7D\u5931\u8D25: ' + e.message);
   }
 }
 
@@ -262,7 +267,7 @@ function populateContinents() {
     }
   });
   for (var key in countryMap) {
-    if (countryMap.hasOwnProperty(key) && !continents.some(function(c) { return c.code === key; })) {
+    if (Object.hasOwn(countryMap, key) && !continents.some(function(c) { return c.code === key; })) {
       sel.innerHTML += '<option value="' + htmlEscape(key) + '">\uD83C\uDF0D ' + htmlEscape(key) + '</option>';
     }
   }
@@ -364,7 +369,7 @@ function verifyProxies(proxies) {
       verificationStatus[p.ip] = { status: 'timeout' };
       renderIPList(currentProxies);
     }, 10000);
-    fetch('https://api.090227.xyz/check?proxyip=' + p.ip, { signal: controller.signal })
+    fetch('https://api.090227.xyz/check?proxyip=' + encodeURIComponent(p.ip), { signal: controller.signal })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         clearTimeout(timeoutId);
@@ -374,7 +379,7 @@ function verifyProxies(proxies) {
           responseTime: data.responseTime || null
         };
         renderIPList(currentProxies);
-        if (data.success && p.lat && p.lng) updateMap(p);
+        if (data.success && p.lat != null && p.lng != null) updateMap(p);
       })
       .catch(function() {
         clearTimeout(timeoutId);
@@ -524,26 +529,26 @@ var map = null;
 var markers = {};
 
 function initMap() {
-  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([20, 100], 3);
+  map = L.map('map', { scrollWheelZoom: false, attributionControl: false }).setView([20, 100], 3);
   L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
     subdomains: '1234', minZoom: 1, maxZoom: 18
   }).addTo(map);
   map.on('popupopen', function(e) {
-    var src = e.popup._source;
+    var src = e.sourceTarget;
     if (!src) return;
-    if (!src._scrollReady) { src._scrollReady = true; return; }
-    src._scrollReady = false;
     var ip;
     for (var k in markers) {
-      if (markers[k] === src) { ip = k; break; }
+      if (Object.hasOwn(markers, k) && markers[k] === src) { ip = k; break; }
     }
     if (!ip) return;
-    var el = document.querySelector('.ip-item[data-ip="' + htmlEscape(ip) + '"]');
-    if (el) {
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      el.classList.add('scroll-highlight');
-      setTimeout(function() { el.classList.remove('scroll-highlight'); }, 5000);
-    }
+    setTimeout(function() {
+      var el = document.querySelector('.ip-item[data-ip="' + htmlEscape(ip) + '"]');
+      if (el) {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.classList.add('scroll-highlight');
+        setTimeout(function() { el.classList.remove('scroll-highlight'); }, 5000);
+      }
+    }, 500);
   });
   setTimeout(function() { map.invalidateSize(); }, 300);
 }
@@ -573,7 +578,7 @@ function updateMap(proxy) {
   var popup = '<div style="font-size:12px;line-height:1.6">' +
     '<strong>' + htmlEscape(proxy.city || proxy.country_cn || proxy.country) + '</strong><br>' +
     '\u843D\u5730IP: ' + htmlEscape(proxy.clientIp || proxy.ip) + '<br>' +
-    'ASN: ' + proxy.asn + ' | ' + htmlEscape(proxy.asOrganization || '') +
+    'ASN: ' + htmlEscape(String(proxy.asn)) + ' | ' + htmlEscape(proxy.asOrganization || '') +
   '</div>';
   markers[key].bindPopup(popup);
   if (!map._movedToFirst) {

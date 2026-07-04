@@ -9,6 +9,8 @@ Cloudflare Worker 部署的 PROXYIP 可视化管理面板。
 - IP 多选、搜索、标签管理；结果可切换换行/逗号分隔格式
 - 暗色模式，单文件部署
 - 桌面端和移动端统一上下布局，友好适配各尺寸屏幕
+- 安全标头：CSP、X-Frame-Options、X-Content-Type-Options、Referrer-Policy
+- 完整的数据验证与错误处理
 
 ## 使用
 
