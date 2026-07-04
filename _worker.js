@@ -71,6 +71,7 @@ textarea { resize: vertical; min-height: 60px; font-family: 'Fira Code', 'Consol
 .ip-list { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .ip-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background .15s; font-size: 12px; font-family: 'Fira Code', 'Consolas', monospace; }
 .ip-item:hover { background: var(--primary-light); }
+.scroll-highlight { background: var(--primary-light) !important; }
 .ip-item .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .ip-item .status-dot.dot-pending { background: #94a3b8; }
 .ip-item .status-dot.dot-fast { background: var(--success); }
@@ -536,6 +537,23 @@ function initMap() {
   L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
     subdomains: '1234', minZoom: 1, maxZoom: 18
   }).addTo(map);
+  map.on('popupopen', function(e) {
+    var src = e.popup._source;
+    if (!src) return;
+    if (!src._scrollReady) { src._scrollReady = true; return; }
+    src._scrollReady = false;
+    var ip;
+    for (var k in markers) {
+      if (markers[k] === src) { ip = k; break; }
+    }
+    if (!ip) return;
+    var el = document.querySelector('.ip-item[data-ip="' + htmlEscape(ip) + '"]');
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('scroll-highlight');
+      setTimeout(function() { el.classList.remove('scroll-highlight'); }, 5000);
+    }
+  });
   setTimeout(function() { map.invalidateSize(); }, 300);
 }
 
