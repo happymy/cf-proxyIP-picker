@@ -72,12 +72,17 @@ textarea { resize: vertical; min-height: 60px; font-family: 'Fira Code', 'Consol
 .ip-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background .15s; font-size: 12px; font-family: 'Fira Code', 'Consolas', monospace; }
 .ip-item:hover { background: var(--primary-light); }
 .ip-item .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.ip-item .status-dot.pending { background: #94a3b8; }
-.ip-item .status-dot.success { background: var(--success); }
-.ip-item .status-dot.failed { background: var(--danger); }
-.ip-item .status-dot.timeout { background: var(--warning); }
+.ip-item .status-dot.dot-pending { background: #94a3b8; }
+.ip-item .status-dot.dot-fast { background: var(--success); }
+.ip-item .status-dot.dot-slow { background: #eab308; }
+.ip-item .status-dot.dot-error { background: var(--danger); }
 .ip-item .ip-text { flex: 1; }
-.ip-item .response-time { color: var(--text-secondary); font-size: 11px; }
+.ip-item .ip-info { color: var(--text-secondary); font-size: 11px; }
+.ip-item .response-time { font-size: 11px; }
+.ip-item .response-time.rt-fast { color: var(--success); }
+.ip-item .response-time.rt-slow { color: #eab308; }
+.ip-item .response-time.rt-error { color: var(--danger); }
+.ip-item .response-time.rt-pending { color: #94a3b8; }
 .ip-item input[type="checkbox"] { accent-color: var(--primary); }
 .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; padding: 4px; }
 .tag { display: inline-flex; align-items: center; gap: 4px; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 3px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
@@ -311,27 +316,34 @@ function renderIPList(proxies) {
   list.innerHTML = filtered.map(function(p) {
     var v = verificationStatus[p.ip] || { status: 'pending' };
     var checked = selectedIPs.has(p.ip) ? 'checked' : '';
+    var dotClass = 'dot-pending';
+    var rtClass = 'rt-pending';
     var statusHtml = '';
-    if (v.status === 'success' && v.responseTime) {
-      statusHtml = '<span class="response-time">' + htmlEscape(v.responseTime) + 'ms</span>';
+    if (v.status === 'success' && v.responseTime != null) {
+      if (v.responseTime < 200) {
+        dotClass = 'dot-fast'; rtClass = 'rt-fast';
+      } else {
+        dotClass = 'dot-slow'; rtClass = 'rt-slow';
+      }
+      statusHtml = '<span class="response-time ' + rtClass + '">' + htmlEscape(v.responseTime) + 'ms</span>';
     } else if (v.status === 'pending') {
-      statusHtml = '<span class="response-time" style="color:#94a3b8">检测中...</span>';
-    } else if (v.status === 'failed') {
-      statusHtml = '<span class="response-time" style="color:' + cssVar('--danger') + '">失败</span>';
-    } else if (v.status === 'timeout') {
-      statusHtml = '<span class="response-time" style="color:' + cssVar('--warning') + '">超时</span>';
+      statusHtml = '<span class="response-time rt-pending">检测中...</span>';
+    } else {
+      dotClass = 'dot-error'; rtClass = 'rt-error';
+      statusHtml = '<span class="response-time rt-error">' + (v.status === 'timeout' ? '超时' : '失败') + '</span>';
     }
+    var city = p.city && p.city !== '未知' ? htmlEscape(p.city) : '';
+    var org = p.asOrganization && p.asOrganization !== '未知' ? htmlEscape(p.asOrganization) : '';
+    var asn = org ? 'AS' + p.asn + ' ' + org : p.asn ? 'AS' + p.asn : '';
+    var info = [city, asn].filter(Boolean).join(' · ');
     return '<label class="ip-item" data-ip="' + htmlEscape(p.ip) + '">' +
       '<input type="checkbox" ' + checked + '>' +
-      '<span class="status-dot ' + v.status + '"></span>' +
+      '<span class="status-dot ' + dotClass + '"></span>' +
       '<span class="ip-text">' + htmlEscape(p.ip) + '</span>' +
+      (info ? '<span class="ip-info">' + info + '</span>' : '') +
       statusHtml +
     '</label>';
   }).join('');
-}
-
-function cssVar(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name;
 }
 
 function verifyProxies(proxies) {
@@ -527,15 +539,27 @@ function initMap() {
   setTimeout(function() { map.invalidateSize(); }, 300);
 }
 
+function markerColor(v) {
+  if (v.status === 'success' && v.responseTime != null) {
+    return v.responseTime < 200 ? '#22c55e' : '#eab308';
+  }
+  return '#ef4444';
+}
+
 function updateMap(proxy) {
   var key = proxy.ip;
   var lat = parseFloat(proxy.lat);
   var lng = parseFloat(proxy.lng);
   if (isNaN(lat) || isNaN(lng)) return;
+  var v = verificationStatus[proxy.ip] || {};
+  var color = markerColor(v);
   if (markers[key]) {
     markers[key].setLatLng([lat, lng]);
+    markers[key].setStyle({ fillColor: color, color: color });
   } else {
-    markers[key] = L.marker([lat, lng]).addTo(map);
+    markers[key] = L.circleMarker([lat, lng], {
+      radius: 6, fillColor: color, color: color, weight: 2, opacity: 1, fillOpacity: 0.8
+    }).addTo(map);
   }
   var popup = '<div style="font-size:12px;line-height:1.6">' +
     '<strong>' + htmlEscape(proxy.city || proxy.country_cn || proxy.country) + '</strong><br>' +
